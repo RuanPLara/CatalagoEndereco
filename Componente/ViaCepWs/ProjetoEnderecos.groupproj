@@ -1,0 +1,48 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{C8F947D6-1088-42E7-8259-6179F75EEAE1}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="ViaCepWs.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="..\..\CatalagoEndereco\CatalagoEnderecos.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="ViaCepWs">
+        <MSBuild Projects="ViaCepWs.dproj"/>
+    </Target>
+    <Target Name="ViaCepWs:Clean">
+        <MSBuild Projects="ViaCepWs.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="ViaCepWs:Make">
+        <MSBuild Projects="ViaCepWs.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="CatalagoEnderecos">
+        <MSBuild Projects="..\..\CatalagoEndereco\CatalagoEnderecos.dproj"/>
+    </Target>
+    <Target Name="CatalagoEnderecos:Clean">
+        <MSBuild Projects="..\..\CatalagoEndereco\CatalagoEnderecos.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="CatalagoEnderecos:Make">
+        <MSBuild Projects="..\..\CatalagoEndereco\CatalagoEnderecos.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="ViaCepWs;CatalagoEnderecos"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="ViaCepWs:Clean;CatalagoEnderecos:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="ViaCepWs:Make;CatalagoEnderecos:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>
