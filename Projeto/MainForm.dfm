@@ -31,6 +31,7 @@ object frmMain: TfrmMain
     EditLabel.Width = 21
     EditLabel.Height = 15
     EditLabel.Caption = 'Cep'
+    MaxLength = 8
     NumbersOnly = True
     TabOrder = 1
     Text = ''
@@ -40,9 +41,11 @@ object frmMain: TfrmMain
     Top = 96
     Width = 449
     Height = 23
+    CharCase = ecUpperCase
     EditLabel.Width = 35
     EditLabel.Height = 15
     EditLabel.Caption = 'Estado'
+    MaxLength = 2
     TabOrder = 2
     Text = ''
   end
@@ -104,25 +107,23 @@ object frmMain: TfrmMain
     Top = 295
     Width = 990
     Height = 322
-    ActivePage = TsGrid
+    ActivePage = TsDados
     Anchors = [akLeft, akTop, akRight]
     TabOrder = 8
     object TsDados: TTabSheet
-      Caption = 'TsDados'
+      Caption = 'MetaDados'
       object mmResult: TMemo
         Left = 0
         Top = 0
         Width = 982
         Height = 292
         Align = alClient
-        Lines.Strings = (
-          'mmResult')
         ScrollBars = ssVertical
         TabOrder = 0
       end
     end
     object TsGrid: TTabSheet
-      Caption = 'TsGrid'
+      Caption = 'Dados'
       ImageIndex = 1
       object GdDados: TDBGrid
         Left = 0
@@ -130,7 +131,7 @@ object frmMain: TfrmMain
         Width = 982
         Height = 292
         Align = alClient
-        DataSource = dsDados
+        DataSource = dsDadosEndereco
         TabOrder = 0
         TitleFont.Charset = DEFAULT_CHARSET
         TitleFont.Color = clWindowText
@@ -149,19 +150,19 @@ object frmMain: TfrmMain
     TabOrder = 9
     OnClick = BtDeletarClick
   end
-  object ViaCepWS: TViaCepWS
-    Left = 736
-    Top = 72
-  end
-  object cdsDados: TClientDataSet
+  object cdsDadosEndereco: TClientDataSet
     Aggregates = <>
     Params = <>
     Left = 736
     Top = 136
   end
-  object dsDados: TDataSource
-    DataSet = cdsDados
+  object dsDadosEndereco: TDataSource
+    DataSet = cdsDadosEndereco
     Left = 736
     Top = 200
+  end
+  object ViaCepWS: TViaCepWS
+    Left = 736
+    Top = 64
   end
 end

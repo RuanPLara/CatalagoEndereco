@@ -12,7 +12,6 @@ uses
 type
   TfrmMain = class(TForm)
     ListarTodos: TButton;
-    ViaCepWS: TViaCepWS;
     EdCep: TLabeledEdit;
     edEstado: TLabeledEdit;
     EdCidade: TLabeledEdit;
@@ -25,9 +24,10 @@ type
     TsGrid: TTabSheet;
     mmResult: TMemo;
     GdDados: TDBGrid;
-    cdsDados: TClientDataSet;
-    dsDados: TDataSource;
+    cdsDadosEndereco: TClientDataSet;
+    dsDadosEndereco: TDataSource;
     BtDeletar: TButton;
+    ViaCepWS: TViaCepWS;
     procedure ListarTodosClick(Sender: TObject);
     procedure btBuscarCepClick(Sender: TObject);
     procedure JSONToDataSet(JSONString: string; DataSet: TDataSet);
@@ -60,18 +60,21 @@ begin
   LUf := Trim(EdEstado.Text);
   if LUf = EmptyStr then
   begin
+    EdEstado.SetFocus;
     raise Exception.Create('Informe um estado válido');
   end;
 
   LCidade := Trim(EdCidade.Text);
   if LCidade = EmptyStr then
   begin
+    EdCidade.SetFocus;
     raise Exception.Create('Informe uma cidade válida');
   end;
 
   LLogradouro := Trim(EdLogradouro.Text);
   if LLogradouro = EmptyStr then
   begin
+    EdLogradouro.SetFocus;
     raise Exception.Create('Informe um logradouro válido');
   end;
 
@@ -94,7 +97,9 @@ begin
         ViaCepEnderecoToInterface(LEndereco, indexEndereco);
         LEnderecoController.Add(LEndereco);
       end;
-    end;
+    end
+    else
+      raise Exception.Create('Não foi possível localizar um endereço com os dados informados');
   end
   else
   begin
@@ -116,7 +121,9 @@ begin
           ViaCepEnderecoToInterface(LEndereco, indexEndereco);
           LEnderecoController.Update(LEndereco);
         end;
-      end;
+      end
+      else
+        raise Exception.Create('Não foi possível localizar um endereço com os dados informados');
     end;
   end;
 
@@ -217,7 +224,7 @@ begin
 
     mmResult.Lines.Text := LListaJson.ToString;
     PgResponse.ActivePage := TsGrid;
-    JSONToDataSet(mmResult.Lines.Text, cdsDados);
+    JSONToDataSet(mmResult.Lines.Text, cdsDadosEndereco);
   finally
     LListaJson.Free;
   end;
@@ -232,8 +239,8 @@ begin
   LCep := Trim(EdCep.Text);
   if LCep = EmptyStr then
   begin
+    EdCep.SetFocus;
     raise Exception.Create('Informe um cep válido');
-    exit;
   end;
 
   mmResult.Clear;
@@ -253,7 +260,9 @@ begin
         ViaCepEnderecoToInterface(LEndereco, indexEndereco);
         LEnderecoController.Add(LEndereco);
       end;
-    end;
+    end
+    else
+      raise Exception.Create('Não foi possível localizar um endereço com o CEP informado');
   end
   else
   begin
@@ -274,7 +283,9 @@ begin
           ViaCepEnderecoToInterface(LEndereco, indexEndereco);
           LEnderecoController.Update(LEndereco);
         end;
-      end;
+      end
+      else
+        raise Exception.Create('Não foi possível localizar um endereço com o CEP informado');
     end;
   end;
 
@@ -288,7 +299,7 @@ begin
   LEnderecoController := TDBEnderecoRepository.Create(TDatabaseConnection.GetInstance.GetFDConnection);
   for LEndereco in LEnderecoController.GetAll do
     LEnderecoController.Delete(LEndereco);
-  showmessage('Deletados');
+  showmessage('Registos deletados com sucesso!');
 end;
 
 end.

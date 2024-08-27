@@ -48,6 +48,9 @@ type
     function ProcessarResposta(const Response: string): Boolean;
     procedure SetEnderecoConsulta(const Value: TEndereco);
     procedure ParseJSONToEndereco(JSONObj: TJSONObject; Endereco: TEndereco);
+    procedure ProcessarJSON(const JSONObj: TJSONObject);
+    procedure ProcessarXml(const Node: IXMLNode);
+    procedure ExtrairEnderecoXml(const Node: IXMLNode);
   public
     constructor Create(AOwner: TComponent); override;
     destructor Destroy; override;
@@ -116,73 +119,26 @@ begin
   Endereco.Unidade := JSONObj.GetValue<string>('unidade', '');
 end;
 
+procedure TViaCepWS.ProcessarJSON(const JSONObj: TJSONObject);
+var LEndereco: TEndereco;
+begin
+  LEndereco := TEndereco.Create;
+  try
+    ParseJSONToEndereco(JSONObj, LEndereco);
+    FEnderecosResposta.Add(LEndereco);
+  except
+    LEndereco.Free;
+    raise Exception.Create('Erro ao processar o JSON.');
+  end;
+end;
+
 function TViaCepWS.ProcessarResposta(const Response: string): Boolean;
 var
   JSONValue: TJSONValue;
   JSONArray: TJSONArray;
   JSONObject: TJSONObject;
   XMLDoc: IXMLDocument;
-  Endereco: TEndereco;
-
-  Procedure ProcessarJSON(const JSONObj: TJSONObject);
-  begin
-    Endereco := TEndereco.Create;
-    try
-      ParseJSONToEndereco(JSONObj, Endereco);
-      FEnderecosResposta.Add(Endereco);
-    except
-      Endereco.Free;
-      raise Exception.Create('Erro ao processar o JSON.');
-    end;
-  end;
-
-  Procedure ProcessarXML(const Node: IXMLNode);
-  var
-    ChildNode: IXMLNode;
-  begin
-    Endereco := TEndereco.Create;
-    try
-      ChildNode := Node.ChildNodes.FindNode('logradouro');
-      if Assigned(ChildNode) then
-        Endereco.Logradouro := ChildNode.Text;
-      ChildNode := Node.ChildNodes.FindNode('complemento');
-      if Assigned(ChildNode) then
-        Endereco.Complemento := ChildNode.Text;
-      ChildNode := Node.ChildNodes.FindNode('bairro');
-      if Assigned(ChildNode) then
-        Endereco.Bairro := ChildNode.Text;
-      ChildNode := Node.ChildNodes.FindNode('localidade');
-      if Assigned(ChildNode) then
-        Endereco.Cidade := ChildNode.Text;
-      ChildNode := Node.ChildNodes.FindNode('uf');
-      if Assigned(ChildNode) then
-        Endereco.Estado := ChildNode.Text;
-      ChildNode := Node.ChildNodes.FindNode('cep');
-      if Assigned(ChildNode) then
-        Endereco.CEP := ChildNode.Text;
-      ChildNode := Node.ChildNodes.FindNode('ddd');
-      if Assigned(ChildNode) then
-        Endereco.DDD := ChildNode.Text;
-      ChildNode := Node.ChildNodes.FindNode('siafi');
-      if Assigned(ChildNode) then
-        Endereco.Siafi := ChildNode.Text;
-      ChildNode := Node.ChildNodes.FindNode('ibge');
-      if Assigned(ChildNode) then
-        Endereco.Icbe := ChildNode.Text;
-      ChildNode := Node.ChildNodes.FindNode('gia');
-      if Assigned(ChildNode) then
-        Endereco.Gia := ChildNode.Text;
-      ChildNode := Node.ChildNodes.FindNode('unidade');
-      if Assigned(ChildNode) then
-        Endereco.Unidade := ChildNode.Text;
-
-      FEnderecosResposta.Add(Endereco);
-    except
-      Endereco.Free;
-      raise Exception.Create('Erro ao processar o XML.');
-    end;
-  end;
-
+  i :integer;
 begin
   Result := False;
   FEnderecosResposta.Clear;
@@ -195,7 +151,10 @@ begin
             if JSONValue is TJSONArray then
             begin
               JSONArray := JSONValue as TJSONArray;
-              for var I := 0 to JSONArray.Count - 1 do
+              if JSONArray.Count = 0 then
+                exit(False);
+
+              for I := 0 to JSONArray.Count - 1 do
               begin
                 JSONObject := JSONArray.Items[I] as TJSONObject;
                 ProcessarJSON(JSONObject);
@@ -204,6 +163,8 @@ begin
             else if JSONValue is TJSONObject then
             begin
               JSONObject := JSONValue as TJSONObject;
+              if JSONObject.GetValue<string>('erro', '') <> '' then
+                Exit(False);
               ProcessarJSON(JSONObject);
             end;
             Result := FEnderecosResposta.Count > 0;
@@ -217,7 +178,11 @@ begin
           try
             if Assigned(XMLDoc) and Assigned(XMLDoc.DocumentElement) then
             begin
-              for var I := 0 to XMLDoc.DocumentElement.ChildNodes.Count - 1 do
+              if (Assigned(XMLDoc.DocumentElement.ChildNodes.FindNode('erro'))) and
+                 (XMLDoc.DocumentElement.ChildNodes.FindNode('erro').Text <> '') then
+                exit(False);
+
+              for I := 0 to XMLDoc.DocumentElement.ChildNodes.Count - 1 do
                 ProcessarXML(XMLDoc.DocumentElement.ChildNodes[I]);
               Result := FEnderecosResposta.Count > 0;
             end;
@@ -230,6 +195,77 @@ begin
     on E: Exception do
       raise Exception.Create('Erro ao processar a resposta: ' + E.Message);
   end;
+end;
+
+procedure TViaCepWS.ExtrairEnderecoXml(const Node: IXMLNode);
+var LEndereco : TEndereco;
+    ChildNode: IXMLNode;
+begin
+  LEndereco := TEndereco.Create;
+  try
+    ChildNode := Node.ChildNodes.FindNode('localidade');
+    if Assigned(ChildNode) then
+      LEndereco.Cidade := Utf8ToString(ChildNode.Text);
+    if LEndereco.Cidade = EmptyStr then
+    begin
+      LEndereco.Free;
+      Exit;
+    end;
+    ChildNode := Node.ChildNodes.FindNode('logradouro');
+    if Assigned(ChildNode) then
+      LEndereco.Logradouro := Utf8ToString(ChildNode.Text);
+    ChildNode := Node.ChildNodes.FindNode('complemento');
+    if Assigned(ChildNode) then
+      LEndereco.Complemento := Utf8ToString(ChildNode.Text);
+    ChildNode := Node.ChildNodes.FindNode('bairro');
+    if Assigned(ChildNode) then
+      LEndereco.Bairro := Utf8ToString(ChildNode.Text);
+    ChildNode := Node.ChildNodes.FindNode('uf');
+    if Assigned(ChildNode) then
+      LEndereco.Estado := Utf8ToString(ChildNode.Text);
+    ChildNode := Node.ChildNodes.FindNode('cep');
+    if Assigned(ChildNode) then
+      LEndereco.CEP := ChildNode.Text;
+    ChildNode := Node.ChildNodes.FindNode('ddd');
+    if Assigned(ChildNode) then
+      LEndereco.DDD := ChildNode.Text;
+    ChildNode := Node.ChildNodes.FindNode('siafi');
+    if Assigned(ChildNode) then
+      LEndereco.Siafi := ChildNode.Text;
+    ChildNode := Node.ChildNodes.FindNode('ibge');
+    if Assigned(ChildNode) then
+      LEndereco.Icbe := ChildNode.Text;
+    ChildNode := Node.ChildNodes.FindNode('gia');
+    if Assigned(ChildNode) then
+      LEndereco.Gia := ChildNode.Text;
+    ChildNode := Node.ChildNodes.FindNode('unidade');
+    if Assigned(ChildNode) then
+      LEndereco.Unidade := Utf8ToString(ChildNode.Text);
+
+    FEnderecosResposta.Add(LEndereco);
+  except
+    LEndereco.Free;
+    raise Exception.Create('Erro ao processar o XML.');
+  end;
+end;
+
+procedure TViaCepWS.ProcessarXml(const Node: IXMLNode);
+var
+  ChildNode: IXMLNode;
+  I : integer;
+begin
+  ChildNode := Node.ChildNodes.FindNode('endereco');
+  if not Assigned(ChildNode) then
+    ExtrairEnderecoXml(ChildNode)
+  else
+  begin
+    for I := 0 to Node.ChildNodes.Count - 1 do
+    begin
+      ChildNode := Node.ChildNodes[i];
+      ExtrairEnderecoXml(ChildNode);
+    end;
+  end;
+
 end;
 
 function TViaCepWS.BuscarCEP: Boolean;
@@ -285,8 +321,11 @@ begin
     Response := FIdHTTP.Get(URL);
     Result := ProcessarResposta(Response);
   except
-    on E: Exception do
-      raise Exception.Create('Erro ao buscar o endereço: ' + E.Message);
+    on E: EIdHTTPProtocolException do
+      raise Exception.Create(Format('Erro ao buscar o endereço. Código: %s, Mensagem: %s',
+        [E.ErrorCode.ToString, E.ErrorMessage]));
+    on E:Exception do
+      raise Exception.Create(Format('Erro ao buscar o endereço. Mensagem: %s', [E.Message]));
   end;
 end;
 
