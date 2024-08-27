@@ -8,3 +8,5 @@ Utilizando conceitos de
   Criação de componentes
 
 Utilizado banco de dados Firebird Embarcado
+Todas as DLLs necessárias estão junto ao executável
+bem como o banco de dados
